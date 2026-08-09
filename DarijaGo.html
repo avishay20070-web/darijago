@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>DarijaGo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7faf8;color:#24312d;font-family:Arial,sans-serif}
+header{background:#fff;border-bottom:1px solid #dce8e1;padding:14px 16px;position:sticky;top:0;z-index:5}
+.head{max-width:720px;margin:auto;display:flex;justify-content:space-between;align-items:center}.logo{font-size:22px;font-weight:900;color:#174c3d}
+.stats{display:flex;gap:6px;font-weight:bold}.s{padding:7px 8px;border-radius:10px;background:#f4f7f5}
+main{max-width:720px;margin:auto;padding:18px 14px 90px}.hero{background:#e9f7ee;border-radius:20px;padding:20px;margin-bottom:18px}.hero h1{margin:0 0 8px;font-size:28px}.hero p{margin:0;line-height:1.5;color:#62736b}
+.path{position:relative;padding:10px 0}.path:before{content:"";position:absolute;top:20px;bottom:20px;right:50%;width:7px;background:#dfece4;border-radius:8px}
+.unit{position:relative;height:125px;display:flex;align-items:center;justify-content:center}.unit:nth-child(odd){transform:translateX(-55px)}.unit:nth-child(even){transform:translateX(55px)}
+.node{width:78px;height:78px;border:0;border-radius:50%;background:#58b957;color:#fff;font-size:25px;font-weight:bold;box-shadow:0 5px #3f9840;position:relative;z-index:1}.node.lock{background:#d5dfda;box-shadow:0 5px #b9c5bf}
+.lab{position:absolute;top:92px;background:#fff;border:1px solid #dce8e1;border-radius:9px;padding:6px 9px;font-size:12px;font-weight:bold;white-space:nowrap;z-index:2}
+.card{background:#fff;border:1px solid #dce8e1;border-radius:20px;padding:20px}.hidden{display:none}
+.back{border:0;background:#edf4f0;padding:10px 13px;border-radius:10px;font-weight:bold}.bar{height:9px;background:#e3ece7;border-radius:10px;margin:18px 0}.bar i{display:block;height:100%;background:#58b957;border-radius:10px}
+.q{text-align:center;padding:20px 0}.q .ar{font-size:34px;font-weight:900;color:#087f5b;margin:14px 0}.sound{border:0;background:#e8f6ed;border-radius:50%;width:48px;height:48px;font-size:21px}
+.answers{display:grid;gap:9px}.ans{background:#fff;border:2px solid #dce8e1;border-radius:13px;padding:15px;text-align:right;font-size:16px}.ans.ok{background:#e8f7eb;border-color:#58b957}.ans.no{background:#fff0ee;border-color:#ef6258}
+.next{margin-top:16px;width:100%;padding:14px;border:0;border-radius:13px;background:#58b957;color:#fff;font-weight:900;font-size:16px}.next:disabled{opacity:.4}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dce8e1;display:flex;justify-content:center;gap:40px;padding:9px;z-index:8}nav button{border:0;background:none;color:#64736d;font-weight:bold}nav b{display:block;font-size:20px}
+@media(max-width:500px){.unit:nth-child(odd){transform:translateX(-35px)}.unit:nth-child(even){transform:translateX(35px)}.hero h1{font-size:25px}}
+</style>
+</head>
+<body>
+<header><div class="head"><div class="logo">🇲🇦 DarijaGo</div><div class="stats"><span class="s">🔥 <span id="st">0</span></span><span class="s">⭐ <span id="xp">0</span></span><span class="s">❤️ <span id="hp">5</span></span></div></div></header>
+<main>
+<div id="home">
+<div class="hero"><h1>לומדים דרג׳ית. מדברים דרג׳ית. 🇲🇦</h1><p>מסלול משחקי שמתחיל מאפס ומתקדם בהדרגה לשיחות אמיתיות.</p></div>
+<div id="path" class="path"></div>
+</div>
+<div id="lesson" class="hidden card">
+<button class="back" onclick="home()">← חזרה</button>
+<h2 id="title"></h2><div class="bar"><i id="prog"></i></div>
+<div id="content"></div>
+<button id="next" class="next" disabled onclick="next()">המשך</button>
+</div>
+</main>
+<nav><button onclick="home()">🏠<b>מסלול</b></button><button onclick="review()">🔊<b>חזרה</b></button><button onclick="stats()">🏆<b>הישגים</b></button></nav>
+<script>
+(function () {
+  const lessons = [
+    ["ברכות",["سلام|שלום","شكرا|תודה","لاباس؟|הכול בסדר?","كيداير؟|מה שלומך?"]],
+    ["היכרות",["سميتي...|קוראים לי...","منين نتا؟|מאיפה אתה?","أنا من...|אני מ...","واش كتفهم؟|אתה מבין?"]],
+    ["משפטי הישרדות",["ما فهمتش|לא הבנתי","عاود، عافاك|תגיד שוב בבקשה","هضر بشوية|דבר קצת לאט","واخا|בסדר"]],
+    ["רצונות",["بغيت|אני רוצה","ما بغيتش|אני לא רוצה","بغيت ناكل|אני רוצה לאכול","بغيت نشرب|אני רוצה לשתות"]],
+    ["שאלות",["شنو؟|מה?","فين؟|איפה?","شحال؟|כמה?","علاش؟|למה?"]],
+    ["משפחה",["خويا|אחי","ختي|אחותי","الوالدين|ההורים","صاحبي|החבר שלי"]],
+    ["אוכל",["ما|מים","أتاي|תה","قهوة|קפה","خبز|לחם"]],
+    ["קניות",["شحال هادا؟|כמה זה?","غالي|יקר","رخيص|זול","بغيت هادا|אני רוצה את זה"]],
+    ["כיוונים",["فين الطريق؟|איפה הדרך?","ليمين|ימינה","ليسار|שמאלה","قدّام|קדימה"]],
+    ["זמן",["دابا|עכשיו","اليوم|היום","غدا|מחר","من بعد|אחר כך"]],
+    ["פעולות",["كنمشي|אני הולך","كنجي|אני בא","كناكل|אני אוכל","كنشرب|אני שותה"]],
+    ["עבר",["مشيت|הלכתי","جيت|באתי","كليت|אכלתי","شربت|שתיתי"]],
+    ["עתיד",["غادي نمشي|אני אלך","غادي نجي|אני אבוא","غادي ناكل|אני אוכל בעתיד","غادي نشرب|אני אשתה"]],
+    ["רגשות",["فرحان|שמח","عيان|עייף","خايف|מפחד","كنبغي|אני אוהב"]],
+    ["תיאורים",["كبير|גדול","صغير|קטן","زوين|יפה","مزيان|טוב"]],
+    ["רחוב",["شنو كتدير؟|מה אתה עושה?","فين غادي؟|לאן אתה הולך?","واش بخير؟|אתה בסדר?","مع من؟|עם מי؟"]],
+    ["בית",["دار|בית","باب|דלת","بيت النعاس|חדר שינה","كوزينة|מטבח"]],
+    ["עבודה",["خدمة|עבודה","مدرسة|בית ספר","معلم|מורה","خدام|עובד"]],
+    ["טלפון",["عيط ليا|תתקשר אליי","صيفط ليا|שלח לי","مساج|הודעה","تلفون|טלפון"]],
+    ["מסעדה",["بغيت الما|אני רוצה מים","الحساب عافاك|חשבון בבקשה","بلا ملح|בלי מלח","زوين بزاف|טעים מאוד"]],
+    ["אירוח",["مرحبا|ברוך הבא","تفضل|בבקשה, תיכנס","آجي|בוא","جلس|שב"]],
+    ["סיפור",["البارح|אתמול","من بعد|אחר כך","منين|כש/מאז","حيت|כי"]],
+    ["דעה",["بالنسبة ليا|לדעתי","كنظن|אני חושב","يمكن|אולי","أكيد|בטח"]],
+    ["עזרה",["عاونّي|תעזור לי","عندي مشكل|יש לי בעיה","فين الطبيب؟|איפה הרופא?","عافاك|בבקשה"]],
+    ["טיול",["فين الفندق؟|איפה המלון?","مطار|שדה תעופה","حجز|הזמנה","غادي ل...|אני נוסע ל..."]],
+    ["טלפון",["ألو|הלו","سمعني|שומע אותי?","عاود|תחזור","نتلاقاو|ניפגש"]],
+    ["חברים",["آش خبارك؟|מה נשמע?","شنو الجديد؟|מה חדש?","هادي مدة|עבר הרבה זמן","نشوفك|נתראה"]],
+    ["ביטויים",["بزاف|הרבה מאוד","شوية|קצת","صافي|בסדר/זהו","يلاه|יאללה"]],
+    ["שיחה",["كنهضر شوية بالدارجة|אני מדבר קצת דרג׳ית","كنفهم|אני מבין","ما كنفهمش|אני לא מבין","هضر معايا|דבר איתי"]],
+    ["מבחן שטף",["بغيت نتعلم الدارجة|אני רוצה ללמוד דרג׳ית","كنقدر نهضر|אני יכול לדבר","كنفهم شوية|אני מבין קצת","واخا فهمت|בסדר, הבנתי"]]
+  ];
+
+  const $ = id => document.getElementById(id);
+  const home = $("home"), lesson = $("lesson"), path = $("path");
+  const title = $("title"), content = $("content"), progress = $("prog"), next = $("next");
+  const st = $("st"), xp = $("xp"), hp = $("hp");
+
+  let state;
+  try { state = JSON.parse(localStorage.getItem("DarijaGoStable") || "null"); } catch(e) { state = null; }
+  if (!state) state = {done:0,xp:0,streak:0,hp:5};
+
+  let lessonIndex = 0, questionIndex = 0, answered = false;
+
+  function save(){
+    localStorage.setItem("DarijaGoStable", JSON.stringify(state));
+    updateStats();
+    renderPath();
+  }
+  function updateStats(){
+    st.textContent = state.streak;
+    xp.textContent = state.xp;
+    hp.textContent = state.hp;
+  }
+  function renderPath(){
+    path.innerHTML = "";
+    lessons.forEach((l,i)=>{
+      const wrap = document.createElement("div");
+      wrap.className = "unit";
+      const b = document.createElement("button");
+      b.className = "node " + (i > state.done ? "lock" : "");
+      b.textContent = i < state.done ? "✓" : i === state.done ? "▶" : "🔒";
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = (i+1) + ". " + l[0];
+      b.appendChild(label);
+      b.disabled = i > state.done;
+      if(i <= state.done) b.addEventListener("click",()=>openLesson(i));
+      wrap.appendChild(b);
+      path.appendChild(wrap);
+    });
+  }
+  function openLesson(i){
+    lessonIndex=i; questionIndex=0;
+    home.style.display="none";
+    lesson.classList.remove("hidden");
+    title.textContent=lessons[i][0];
+    next.style.display="block";
+    showQuestion();
+  }
+  function showHome(){
+    lesson.classList.add("hidden");
+    next.style.display="block";
+    home.style.display="block";
+    renderPath();
+  }
+  window.goHome=showHome;
+
+  function speak(text){
+    if(!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang="ar-MA"; u.rate=.78;
+    speechSynthesis.speak(u);
+  }
+  window.speak=speak;
+
+  function showQuestion(){
+    answered=false; next.disabled=true;
+    const parts=lessons[lessonIndex][1][questionIndex].split("|");
+    const options=lessons[lessonIndex][1].map(x=>x.split("|")[1]).sort(()=>Math.random()-.5);
+    progress.style.width=(questionIndex/lessons[lessonIndex][1].length*100)+"%";
+    content.innerHTML="";
+    const q=document.createElement("div"); q.className="q";
+    q.innerHTML='<div>בחר את התרגום הנכון</div><div class="ar"></div><div class="tr"></div>';
+    q.querySelector(".ar").textContent=parts[0];
+    q.querySelector(".tr").textContent=parts[1];
+    const sound=document.createElement("button"); sound.className="sound"; sound.textContent="🔊";
+    sound.addEventListener("click",()=>speak(parts[0])); q.appendChild(sound);
+    content.appendChild(q);
+    const answers=document.createElement("div"); answers.className="answers";
+    options.forEach(option=>{
+      const b=document.createElement("button"); b.className="ans"; b.textContent=option;
+      b.addEventListener("click",()=>{
+        if(answered) return;
+        if(option===parts[1]){
+          answered=true; b.classList.add("ok"); state.xp+=10; next.disabled=false; save();
+        }else{
+          b.classList.add("no"); state.hp=Math.max(0,state.hp-1); save();
+        }
+      });
+      answers.appendChild(b);
+    });
+    content.appendChild(answers);
+  }
+
+  next.addEventListener("click",()=>{
+    if(!answered) return;
+    questionIndex++;
+    if(questionIndex<lessons[lessonIndex][1].length) showQuestion();
+    else{
+      if(lessonIndex===state.done){
+        state.done++; state.xp+=30; state.streak++; state.hp=Math.min(5,state.hp+1); save();
+      }
+      progress.style.width="100%"; next.style.display="none";
+      content.innerHTML='<div class="q"><div style="font-size:55px">🎉</div><h2>כל הכבוד!</h2><p>סיימת את השיעור וקיבלת <b>+30 XP</b>.</p><button class="next" style="display:block">חזרה למסלול</button></div>';
+      content.querySelector(".next").addEventListener("click",showHome);
+    }
+  });
+
+  window.review=()=>{
+    const p=lessons[Math.min(state.done,lessons.length-1)][1][0].split("|");
+    speak(p[0]); alert(p[0]+" — "+p[1]);
+  };
+  window.stats=()=>{
+    alert("🏆 הישגים\\n\\n⭐ XP: "+state.xp+"\\n🔥 רצף: "+state.streak+"\\n🎓 שיעורים: "+state.done+"/30\\n❤️ לבבות: "+state.hp);
+  };
+
+  updateStats();
+  renderPath();
+})();
+</script>
+</body>
+</html>
